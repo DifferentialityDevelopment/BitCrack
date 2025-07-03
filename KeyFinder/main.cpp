@@ -404,7 +404,7 @@ int run()
         // Get device context
         KeySearchDevice *d = getDeviceContext(_devices[_config.device], _config.blocks, _config.threads, _config.pointsPerThread, _config.randomMode);
 
-        KeyFinder f(_config.nextKey, _config.endKey, _config.compression, d, _config.stride);
+        KeyFinder f(_config.nextKey, _config.endKey, _config.compression, d, _config.stride, _config.randomMode);
 
         f.setResultCallback(resultCallback);
         f.setStatusInterval(_config.statusInterval);
