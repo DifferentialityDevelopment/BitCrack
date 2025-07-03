@@ -238,11 +238,11 @@ DeviceParameters getDefaultParameters(const DeviceManager::DeviceInfo &device)
 	return p;
 }
 
-static KeySearchDevice *getDeviceContext(DeviceManager::DeviceInfo &device, int blocks, int threads, int pointsPerThread)
+static KeySearchDevice *getDeviceContext(DeviceManager::DeviceInfo &device, int blocks, int threads, int pointsPerThread, bool randomMode)
 {
 #ifdef BUILD_CUDA
     if(device.type == DeviceManager::DeviceType::CUDA) {
-        return new CudaKeySearchDevice((int)device.physicalId, threads, pointsPerThread, blocks);
+        keySearchDevice = new CudaKeySearchDevice(device.cudaId, blocks, threads, pointsPerThread, randomMode);
     }
 #endif
 
