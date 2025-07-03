@@ -103,7 +103,8 @@ void CudaKeySearchDevice::generateStartingPoints()
     uint64_t totalPoints = (uint64_t)_pointsPerThread * _threads * _blocks;
     uint64_t totalMemory = totalPoints * 40;
 
-    std::vector<secp256k1::uint256> exponents;
+    _initialKeys.clear();
+    _initialKeys.reserve(totalPoints);
 
     Logger::log(LogLevel::Info, "Generating " + util::formatThousands(totalPoints) + " starting points (" + util::format("%.1f", (double)totalMemory / (double)(1024 * 1024)) + "MB)");
 
@@ -113,7 +114,7 @@ void CudaKeySearchDevice::generateStartingPoints()
         // Generate random starting points within the keyspace
         for(uint64_t i = 0; i < totalPoints; i++) {
             secp256k1::uint256 randomKey = getRandomKey();
-            exponents.push_back(randomKey);
+            _initialKeys.push_back(randomKey);
         }
     } else {
         Logger::log(LogLevel::Info, "Using sequential mode - generating consecutive keys");
@@ -121,11 +122,11 @@ void CudaKeySearchDevice::generateStartingPoints()
         // Generate key pairs for k, k+1, k+2 ... k + <total points in parallel - 1>
         secp256k1::uint256 privKey = _startExponent;
 
-        exponents.push_back(privKey);
+        _initialKeys.push_back(privKey);
 
         for(uint64_t i = 1; i < totalPoints; i++) {
             privKey = privKey.add(_stride);
-            exponents.push_back(privKey);
+            _initialKeys.push_back(privKey);
         }
     }
 
@@ -274,10 +275,10 @@ void CudaKeySearchDevice::getResultsInternal()
         KeySearchResult minerResult;
 
         // Calculate the private key based on the number of iterations and the current thread
-        secp256k1::uint256 offset = (secp256k1::uint256((uint64_t)_blocks * _threads * _pointsPerThread * _iterations) + secp256k1::uint256(getPrivateKeyOffset(rPtr->thread, rPtr->block, rPtr->idx))) * _stride;
-        secp256k1::uint256 privateKey = secp256k1::addModN(_startExponent, offset);
-
-        minerResult.privateKey = privateKey;
+        uint32_t offset_index = getPrivateKeyOffset(rPtr->thread, rPtr->block, rPtr->idx);
+        secp256k1::uint256 basePrivateKey = _initialKeys[offset_index];
+        secp256k1::uint256 iter_offset = secp256k1::uint256((uint64_t)_blocks * _threads * _pointsPerThread * _iterations) * _stride;
+        minerResult.privateKey = secp256k1::addModN(basePrivateKey, iter_offset);
         minerResult.compressed = rPtr->compressed;
 
         memcpy(minerResult.hash, rPtr->digest, 20);

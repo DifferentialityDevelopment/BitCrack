@@ -49,6 +49,8 @@ private:
 
     void cudaCall(cudaError_t err);
 
+    std::vector<secp256k1::uint256> _initialKeys;
+
     void generateStartingPoints();
 
     secp256k1::uint256 getRandomKey();

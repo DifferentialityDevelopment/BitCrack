@@ -250,11 +250,11 @@ static KeySearchDevice *getDeviceContext(DeviceManager::DeviceInfo &device, int 
 
 #ifdef BUILD_OPENCL
     if(device.type == DeviceManager::DeviceType::OpenCL) {
-        return new CLKeySearchDevice(device.physicalId, threads, pointsPerThread, blocks);
+        keySearchDevice = new CLKeySearchDevice(device.physicalId, threads, pointsPerThread, blocks);
     }
 #endif
 
-    return NULL;
+    return keySearchDevice;
 }
 
 static void printDeviceList(const std::vector<DeviceManager::DeviceInfo> &devices)
