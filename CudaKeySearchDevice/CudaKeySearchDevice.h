@@ -35,6 +35,10 @@ private:
 
     int _compression;
 
+    bool _randomMode;
+    
+    secp256k1::uint256 _endKey;
+
     std::vector<KeySearchResult> _results;
 
     std::string _deviceName;
@@ -46,6 +50,8 @@ private:
     void cudaCall(cudaError_t err);
 
     void generateStartingPoints();
+
+    secp256k1::uint256 getRandomKey();
 
     CudaDeviceKeys _deviceKeys;
 
@@ -69,9 +75,9 @@ private:
 
 public:
 
-    CudaKeySearchDevice(int device, int threads, int pointsPerThread, int blocks = 0);
+    CudaKeySearchDevice(int device, int threads, int pointsPerThread, int blocks = 0, bool randomMode = false);
 
-    virtual void init(const secp256k1::uint256 &start, int compression, const secp256k1::uint256 &stride);
+    virtual void init(const secp256k1::uint256 &start, int compression, const secp256k1::uint256 &stride, bool randomMode = false);
 
     virtual void doStep();
 

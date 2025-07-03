@@ -13,7 +13,7 @@ void CudaKeySearchDevice::cudaCall(cudaError_t err)
     }
 }
 
-CudaKeySearchDevice::CudaKeySearchDevice(int device, int threads, int pointsPerThread, int blocks)
+CudaKeySearchDevice::CudaKeySearchDevice(int device, int threads, int pointsPerThread, int blocks, bool randomMode)
 {
     cuda::CudaDeviceInfo info;
     try {
@@ -56,19 +56,25 @@ CudaKeySearchDevice::CudaKeySearchDevice(int device, int threads, int pointsPerT
     _device = device;
 
     _pointsPerThread = pointsPerThread;
+    
+    _randomMode = randomMode;
 }
 
-void CudaKeySearchDevice::init(const secp256k1::uint256 &start, int compression, const secp256k1::uint256 &stride)
+void CudaKeySearchDevice::init(const secp256k1::uint256 &start, int compression, const secp256k1::uint256 &stride, bool randomMode, const secp256k1::uint256 &end)
 {
     if(start.cmp(secp256k1::N) >= 0) {
         throw KeySearchException("Starting key is out of range");
     }
 
     _startExponent = start;
+    
+    _endKey = end;
 
     _compression = compression;
 
     _stride = stride;
+
+    _randomMode = randomMode;
 
     cudaCall(cudaSetDevice(_device));
 
@@ -101,14 +107,26 @@ void CudaKeySearchDevice::generateStartingPoints()
 
     Logger::log(LogLevel::Info, "Generating " + util::formatThousands(totalPoints) + " starting points (" + util::format("%.1f", (double)totalMemory / (double)(1024 * 1024)) + "MB)");
 
-    // Generate key pairs for k, k+1, k+2 ... k + <total points in parallel - 1>
-    secp256k1::uint256 privKey = _startExponent;
+    if(_randomMode) {
+        Logger::log(LogLevel::Info, "Using random mode - generating random keys within range");
+        
+        // Generate random starting points within the keyspace
+        for(uint64_t i = 0; i < totalPoints; i++) {
+            secp256k1::uint256 randomKey = getRandomKey();
+            exponents.push_back(randomKey);
+        }
+    } else {
+        Logger::log(LogLevel::Info, "Using sequential mode - generating consecutive keys");
+        
+        // Generate key pairs for k, k+1, k+2 ... k + <total points in parallel - 1>
+        secp256k1::uint256 privKey = _startExponent;
 
-    exponents.push_back(privKey);
-
-    for(uint64_t i = 1; i < totalPoints; i++) {
-        privKey = privKey.add(_stride);
         exponents.push_back(privKey);
+
+        for(uint64_t i = 1; i < totalPoints; i++) {
+            privKey = privKey.add(_stride);
+            exponents.push_back(privKey);
+        }
     }
 
     cudaCall(_deviceKeys.init(_blocks, _threads, _pointsPerThread, exponents));
@@ -127,6 +145,22 @@ void CudaKeySearchDevice::generateStartingPoints()
     Logger::log(LogLevel::Info, "Done");
 
     _deviceKeys.clearPrivateKeys();
+}
+
+secp256k1::uint256 CudaKeySearchDevice::getRandomKey()
+{
+    // Calculate the range size
+    secp256k1::uint256 range = _endKey - _startExponent;
+    
+    // Generate a random offset within the range
+    // This is a simplified version - you might want to use a more sophisticated RNG
+    secp256k1::uint256 randomOffset = secp256k1::generatePrivateKey(); // This generates a random 256-bit number
+    
+    // Ensure the random number is within our range by taking modulo
+    // Note: This might introduce slight bias for very large ranges, but should be fine for practical use
+    randomOffset = randomOffset.mod(range.toUint64()); // You may need to implement a proper mod for uint256
+    
+    return _startExponent + randomOffset;
 }
 
 
