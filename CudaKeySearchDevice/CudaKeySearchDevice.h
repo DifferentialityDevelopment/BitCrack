@@ -36,7 +36,7 @@ private:
     int _compression;
 
     bool _randomMode;
-    
+
     secp256k1::uint256 _endKey;
 
     std::vector<KeySearchResult> _results;
@@ -77,7 +77,7 @@ public:
 
     CudaKeySearchDevice(int device, int threads, int pointsPerThread, int blocks = 0, bool randomMode = false);
 
-    virtual void init(const secp256k1::uint256 &start, int compression, const secp256k1::uint256 &stride, bool randomMode = false);
+    virtual void init(const secp256k1::uint256 &start, int compression, const secp256k1::uint256 &stride, bool randomMode = false, const secp256k1::uint256 &end = secp256k1::N - 1);
 
     virtual void doStep();
 
