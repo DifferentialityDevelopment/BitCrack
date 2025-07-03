@@ -130,7 +130,7 @@ void CudaKeySearchDevice::generateStartingPoints()
         }
     }
 
-    cudaCall(_deviceKeys.init(_blocks, _threads, _pointsPerThread, exponents));
+    cudaCall(_deviceKeys.init(_blocks, _threads, _pointsPerThread, _initialKeys));
 
     // Show progress in 10% increments
     double pct = 10.0;
@@ -279,6 +279,7 @@ void CudaKeySearchDevice::getResultsInternal()
         secp256k1::uint256 basePrivateKey = _initialKeys[offset_index];
         secp256k1::uint256 iter_offset = secp256k1::uint256((uint64_t)_blocks * _threads * _pointsPerThread * _iterations) * _stride;
         minerResult.privateKey = secp256k1::addModN(basePrivateKey, iter_offset);
+
         minerResult.compressed = rPtr->compressed;
 
         memcpy(minerResult.hash, rPtr->digest, 20);
