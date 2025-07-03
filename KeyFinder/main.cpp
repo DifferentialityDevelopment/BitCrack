@@ -244,7 +244,7 @@ static KeySearchDevice *getDeviceContext(DeviceManager::DeviceInfo &device, int 
     
 #ifdef BUILD_CUDA
     if(device.type == DeviceManager::DeviceType::CUDA) {
-        keySearchDevice = new CudaKeySearchDevice(device.cudaId, blocks, threads, pointsPerThread, randomMode);
+        keySearchDevice = new CudaKeySearchDevice(device.id, blocks, threads, pointsPerThread, randomMode);
     }
 #endif
 
